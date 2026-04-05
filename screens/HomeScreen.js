@@ -1,13 +1,23 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, Pressable, StyleSheet, Image, Modal, TextInput } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Clipboard from "expo-clipboard";
 import { generatePassword } from "../service/passwordService";
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen({ navigation, onLogout }) {
   const [password, setPassword] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [appName, setAppName] = useState("");
+
+
+  useEffect(() => {
+    const checkToken = async () => {
+      const token = await AsyncStorage.getItem("token");
+      console.log("TOKEN:", token);
+    };
+
+    checkToken();
+  }, []);
 
   const handleGenerate = () => setPassword(generatePassword());
 
@@ -23,6 +33,12 @@ export default function HomeScreen({ navigation }) {
     setModalVisible(false);
     setAppName("");
     navigation.navigate("History");
+  };
+
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem("token");
+    onLogout();
+    alert("Logout realizado");
   };
 
   const copyToClipboard = async () => {
@@ -63,6 +79,10 @@ export default function HomeScreen({ navigation }) {
 
       <Pressable onPress={() => navigation.navigate("History")}>
         <Text style={styles.link}>Ver Senhas</Text>
+      </Pressable>
+
+      <Pressable style={styles.logoutButton} onPress={handleLogout}>
+        <Text style={styles.logoutButtonText}>SAIR</Text>
       </Pressable>
 
       {/* MODAL DE SALVAMENTO */}
@@ -111,6 +131,8 @@ const styles = StyleSheet.create({
   buttonDisabled: { backgroundColor: "#94a3b8" },
   buttonText: { color: "#fff", textAlign: "center", fontWeight: "bold" },
   link: { color: "#1e40af", marginTop: 15 },
+  logoutButton: { backgroundColor: "#dc2626", width: "80%", padding: 15, borderRadius: 8, marginTop: 20 },
+  logoutButtonText: { color: "#fff", textAlign: "center", fontWeight: "bold" },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { width: '85%', backgroundColor: '#fff', padding: 25, borderRadius: 10 },
   modalTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 20, textAlign: "center", color: "#000" },

@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import { signup } from "../service/authService";
+
 
 export default function SignUpScreen({ navigation }) {
     const [nome, setNome] = useState("");
@@ -8,6 +10,43 @@ export default function SignUpScreen({ navigation }) {
     const [confirmPass, setConfirmPass] = useState("");
 
     const canRegister = nome !== "" && email !== "" && pass !== "" && pass === confirmPass;
+
+
+    const handleSignup = async () => {
+        try {
+            await signup({
+                nome,
+                email,
+                password: pass,
+                confirmPassword: confirmPass
+            });
+            
+            alert("Cadastro realizado!");
+            navigation.navigate("SignIn", { email });
+        } catch (e) {
+            let errorMessage = "Erro no cadastro";
+            
+            if (e.response?.data) {
+                const errorData = e.response.data;
+                
+                if (errorData.includes("Senhas não coincidem")) {
+                    errorMessage = "As senhas não coincidem!";
+                } else if (errorData.includes("Email inválido")) {
+                    errorMessage = "Email inválido!";
+                } else if (errorData.includes("Email já cadastrado")) {
+                    errorMessage = "Email já cadastrado!";
+                } else if (errorData.includes("Usuário não encontrado")) {
+                    errorMessage = "Usuário não encontrado!";
+                } else if (errorData.includes("Senha inválida")) {
+                    errorMessage = "Senha inválida!";
+                } else {
+                    errorMessage = errorData;
+                }
+            }
+            
+            alert(errorMessage);
+        }
+    };
 
     return (
         <View style={styles.container}>
@@ -42,7 +81,7 @@ export default function SignUpScreen({ navigation }) {
             <Pressable
                 style={[styles.button, !canRegister && styles.buttonDisabled]}
                 disabled={!canRegister}
-                onPress={() => navigation.navigate("SignIn", { email })}
+                onPress={handleSignup}
             >
                 <Text style={styles.buttonText}>REGISTRAR</Text>
             </Pressable>

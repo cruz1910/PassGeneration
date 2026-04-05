@@ -1,12 +1,47 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { signin } from "../service/authService";
 
-export default function SignInScreen({ navigation, route }) {
+export default function SignInScreen({ navigation, route, onLogin }) {
     const initialEmail = route.params?.email || "";
     const [email, setEmail] = useState(initialEmail);
     const [pass, setPass] = useState("");
 
     const canSignIn = email !== "" && pass !== "";
+
+    const handleLogin = async () => {
+        try {
+            const response = await signin({ email: email, password: pass });
+
+            const token = response.data.token;
+
+            await AsyncStorage.setItem("token", token);
+
+            alert("Login feito!");
+            onLogin();
+            navigation.navigate("Home");
+
+        } catch (e) {
+            let errorMessage = "Erro no login";
+            
+            if (e.response?.data) {
+                const errorData = e.response.data;
+                
+                if (errorData.includes("Usuário não encontrado")) {
+                    errorMessage = "Usuário não encontrado!";
+                } else if (errorData.includes("Senha inválida")) {
+                    errorMessage = "Senha inválida!";
+                } else if (errorData.includes("Email inválido")) {
+                    errorMessage = "Email inválido!";
+                } else {
+                    errorMessage = errorData;
+                }
+            }
+            
+            alert(errorMessage);
+        }
+    };
 
     return (
         <View style={styles.container}>
@@ -36,7 +71,7 @@ export default function SignInScreen({ navigation, route }) {
             <Pressable
                 style={[styles.button, !canSignIn && styles.buttonDisabled]}
                 disabled={!canSignIn}
-                onPress={() => navigation.navigate("Home")}
+                onPress={handleLogin}
             >
                 <Text style={styles.buttonText}>ENTRAR</Text>
             </Pressable>
