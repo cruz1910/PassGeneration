@@ -1,51 +1,45 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { View, Text, Pressable, StyleSheet, Image, Modal, TextInput } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Clipboard from "expo-clipboard";
 import { generatePassword } from "../service/passwordService";
+import { criarSenha } from "../service/senhaService";
 
 export default function HomeScreen({ navigation, onLogout }) {
   const [password, setPassword] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [appName, setAppName] = useState("");
 
-
-  useEffect(() => {
-    const checkToken = async () => {
-      const token = await AsyncStorage.getItem("token");
-      console.log("TOKEN:", token);
-    };
-
-    checkToken();
-  }, []);
-
   const handleGenerate = () => setPassword(generatePassword());
 
   const handleSave = async () => {
-    if (!appName) return;
+    try {
+      await criarSenha({
+        name: appName,
+        pass: password,
+      });
 
-    const newEntry = { id: Date.now().toString(), name: appName, pass: password };
-    const stored = await AsyncStorage.getItem("@history");
-    const parsed = stored ? JSON.parse(stored) : [];
+      setModalVisible(false);
+      setAppName("");
+      setPassword("");
 
-    await AsyncStorage.setItem("@history", JSON.stringify([newEntry, ...parsed]));
+      navigation.navigate("History");
+    } catch (e) {
+      console.log("Erro ao salvar:", e);
+      alert("Erro ao salvar senha");
+    }
+  };
 
-    setModalVisible(false);
-    setAppName("");
-    navigation.navigate("History");
+  const copyToClipboard = async () => {
+    if (!password) return;
+    await Clipboard.setStringAsync(password);
+    alert("Copiado!");
   };
 
   const handleLogout = async () => {
     await AsyncStorage.removeItem("token");
     onLogout();
     alert("Logout realizado");
-  };
-
-  const copyToClipboard = async () => {
-    if (password) {
-      await Clipboard.setStringAsync(password);
-      alert("Copiado!");
-    }
   };
 
   return (
@@ -62,7 +56,7 @@ export default function HomeScreen({ navigation, onLogout }) {
       </Pressable>
 
       <Pressable
-        style={[styles.button, !password && { opacity: 0.5 }]}
+        style={[styles.button, !password && styles.buttonDisabled]}
         onPress={() => setModalVisible(true)}
         disabled={!password}
       >
@@ -70,7 +64,7 @@ export default function HomeScreen({ navigation, onLogout }) {
       </Pressable>
 
       <Pressable
-        style={[styles.button, !password && { opacity: 0.5 }]}
+        style={[styles.button, !password && styles.buttonDisabled]}
         onPress={copyToClipboard}
         disabled={!password}
       >
@@ -85,19 +79,27 @@ export default function HomeScreen({ navigation, onLogout }) {
         <Text style={styles.logoutButtonText}>SAIR</Text>
       </Pressable>
 
-      {/* MODAL DE SALVAMENTO */}
+      {/* MODAL */}
       <Modal visible={modalVisible} animationType="fade" transparent>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>CADASTRO DE SENHA</Text>
 
             <Text style={styles.label}>Nome do aplicativo</Text>
-            <TextInput style={styles.input} value={appName} onChangeText={setAppName} placeholder="Ex: Google" />
+            <TextInput
+              style={styles.input}
+              value={appName}
+              onChangeText={setAppName}
+              placeholder="Ex: Google"
+              placeholderTextColor="#666"
+            />
 
             <Text style={styles.label}>Senha gerada</Text>
-            <TextInput style={[styles.input, { backgroundColor: '#eee' }]} value={password} editable={false} />
-
-
+            <TextInput
+              style={[styles.input, { backgroundColor: "#eee" }]}
+              value={password}
+              editable={false}
+            />
 
             <Pressable
               style={[styles.modalButton, !appName && styles.buttonDisabled]}
@@ -127,17 +129,16 @@ const styles = StyleSheet.create({
   codeArea: { backgroundColor: "#1e40af", width: "80%", padding: 15, borderRadius: 8, marginBottom: 20 },
   passwordText: { color: "#fff", textAlign: "center", fontSize: 20, fontWeight: "bold" },
   button: { backgroundColor: "#2563eb", width: "80%", padding: 15, borderRadius: 8, marginBottom: 10 },
-  buttonSave: { backgroundColor: "#10b981", width: "80%", padding: 15, borderRadius: 8 },
   buttonDisabled: { backgroundColor: "#94a3b8" },
   buttonText: { color: "#fff", textAlign: "center", fontWeight: "bold" },
   link: { color: "#1e40af", marginTop: 15 },
   logoutButton: { backgroundColor: "#dc2626", width: "80%", padding: 15, borderRadius: 8, marginTop: 20 },
   logoutButtonText: { color: "#fff", textAlign: "center", fontWeight: "bold" },
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { width: '85%', backgroundColor: '#fff', padding: 25, borderRadius: 10 },
-  modalTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 20, textAlign: "center", color: "#000" },
-  label: { fontSize: 13, marginBottom: 2, color: '#333' },
-  input: { borderWidth: 1, borderColor: '#000', borderRadius: 4, padding: 8, marginBottom: 15, color: "#000", backgroundColor: "#fff" },
+  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" },
+  modalContent: { width: "85%", backgroundColor: "#fff", padding: 25, borderRadius: 10 },
+  modalTitle: { fontSize: 16, fontWeight: "bold", marginBottom: 20, textAlign: "center", color: "#000" },
+  label: { fontSize: 13, marginBottom: 2, color: "#333" },
+  input: { borderWidth: 1, borderColor: "#000", borderRadius: 4, padding: 8, marginBottom: 15, color: "#000" },
   modalButton: { backgroundColor: "#3085d6", borderWidth: 1, borderColor: "#000", borderRadius: 4, paddingVertical: 10, alignItems: "center", marginBottom: 10 },
   modalButtonText: { color: "#fff", fontWeight: "bold" }
 });

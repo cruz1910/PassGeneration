@@ -20,7 +20,6 @@ export default function SignInScreen({ navigation, route, onLogin }) {
 
             alert("Login feito!");
             onLogin();
-            navigation.navigate("Home");
 
         } catch (e) {
             let errorMessage = "Erro no login";
@@ -41,7 +40,9 @@ export default function SignInScreen({ navigation, route, onLogin }) {
             
             alert(errorMessage);
         }
-    };
+    }
+
+    
 
     return (
         <View style={styles.container}>

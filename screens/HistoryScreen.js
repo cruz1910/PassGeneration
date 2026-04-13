@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Clipboard from "expo-clipboard";
 import { useIsFocused } from "@react-navigation/native";
+import * as Clipboard from "expo-clipboard";
+import { listarSenhas, deletarSenha } from "../service/senhaService";
 
 export default function HistoryScreen({ navigation }) {
   const [history, setHistory] = useState([]);
@@ -10,11 +10,14 @@ export default function HistoryScreen({ navigation }) {
   const isFocused = useIsFocused();
 
   const loadHistory = async () => {
-    const stored = await AsyncStorage.getItem("@history");
-    if (stored) {
-      setHistory(JSON.parse(stored));
+    try {
+      const res = await listarSenhas();
+      setHistory(res.data);
+      setVisibleItems({});
+    } catch (e) {
+      console.log(e);
+      alert("Erro ao carregar senhas");
     }
-    setVisibleItems({}); 
   };
 
   useEffect(() => {
@@ -24,7 +27,7 @@ export default function HistoryScreen({ navigation }) {
   }, [isFocused]);
 
   const toggleVisibility = (id) => {
-    setVisibleItems(prev => ({ ...prev, [id]: !prev[id] }));
+    setVisibleItems((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const copyPass = async (pass) => {
@@ -33,9 +36,13 @@ export default function HistoryScreen({ navigation }) {
   };
 
   const deletePass = async (id) => {
-    const updated = history.filter(item => item.id !== id);
-    setHistory(updated);
-    await AsyncStorage.setItem("@history", JSON.stringify(updated));
+    try {
+      await deletarSenha(id);
+      loadHistory();
+    } catch (e) {
+      console.log(e);
+      alert("Erro ao deletar");
+    }
   };
 
   return (
@@ -43,7 +50,7 @@ export default function HistoryScreen({ navigation }) {
       <Text style={styles.headerTitle}>HISTÓRICO DE SENHAS</Text>
       <FlatList
         data={history}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.card}>
             <View>

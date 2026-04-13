@@ -26,13 +26,12 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerTitleAlign: "center" }}>
+      <Stack.Navigator screenOptions={{ headerTitleAlign: "center" }} initialRouteName={logado ? "Home" : "SignIn"}>
         {!logado ? (
           <>
             <Stack.Screen name="SignIn">
               {(props) => <SignInScreen {...props} onLogin={checkToken} />}
             </Stack.Screen>
-
             <Stack.Screen name="SignUp" component={SignUpScreen} />
           </>
         ) : (
@@ -40,7 +39,6 @@ export default function App() {
             <Stack.Screen name="Home">
               {(props) => <HomeScreen {...props} onLogout={checkToken} />}
             </Stack.Screen>
-
             <Stack.Screen name="History" component={HistoryScreen} />
           </>
         )}
